@@ -376,16 +376,28 @@
             margin-bottom: 4px;
         }
 
-        .color-dot {
-            width: 8px;
+        .spectrum-bar {
             height: 8px;
-            border-radius: 50%;
-            margin-right: 8px;
-            display: inline-block;
+            width: 100%;
+            background: linear-gradient(to right, 
+                hsl(0, 100%, 50%), 
+                hsl(60, 100%, 50%), 
+                hsl(120, 100%, 50%), 
+                hsl(180, 100%, 50%), 
+                hsl(240, 100%, 50%), 
+                hsl(300, 100%, 50%)
+            );
+            border-radius: 4px;
+            margin-bottom: 5px;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
         }
-        
-        .color-dot.green { background: var(--phosphor-green); box-shadow: 0 0 5px var(--phosphor-green); }
-        .color-dot.orange { background: var(--crt-orange); box-shadow: 0 0 5px var(--crt-orange); }
+
+        .spectrum-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.6rem;
+            color: var(--phosphor-dim);
+        }
     </style>
 </head>
 <body class="crt-flicker">
@@ -454,8 +466,11 @@
                 </svg>
                 <div class="care-bear-legend">
                     <div class="legend-title">HEART COHERENCE</div>
-                    <div class="legend-item"><span class="color-dot green"></span> GREEN: BASELINE (LOW)</div>
-                    <div class="legend-item"><span class="color-dot orange"></span> ORANGE: ENTANGLED (HIGH)</div>
+                    <div class="spectrum-bar"></div>
+                    <div class="spectrum-labels">
+                        <span>LOW (RED)</span>
+                        <span>HIGH (VIOLET)</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -654,11 +669,9 @@
             document.getElementById('quantumState').textContent = state;
 
             // Update Care Bear Heart Glow
-            // Interpolate between Green (0, 255, 65) and Orange (255, 107, 26) based on correlation
-            const r = Math.floor(0 + (255 - 0) * correlation);
-            const g = Math.floor(255 + (107 - 255) * correlation);
-            const b = Math.floor(65 + (26 - 65) * correlation);
-            const color = `rgb(${r}, ${g}, ${b})`;
+            // Map correlation (0-1) to Hue (0-300) (Red to Violet)
+            const hue = Math.floor(correlation * 300);
+            const color = `hsl(${hue}, 100%, 50%)`;
             
             const heart = document.getElementById('careBearHeart');
             if (heart) {
