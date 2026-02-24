@@ -336,6 +336,21 @@
             }
         }
 
+        .color-reading-panel {
+            width: 100%;
+            height: 120px;
+            border: 2px solid var(--phosphor-dim);
+            border-radius: 4px;
+            margin-bottom: 15px;
+            transition: background-color 0.1s, box-shadow 0.1s;
+        }
+
+        .color-value-text {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
         .care-bear-container {
             display: flex;
             justify-content: center;
@@ -477,29 +492,9 @@
 
         <div class="main-display">
             <div class="device-panel">
-                <h2>⬢ GCP2 RANDOM STREAM ⬢</h2>
-                <div class="waveform-container">
-                    <canvas id="gcp2Canvas"></canvas>
-                    <div class="grid-overlay"></div>
-                </div>
-                <div class="metrics">
-                    <div class="metric">
-                        <div class="metric-label">VARIANCE</div>
-                        <div class="metric-value" id="gcp2Variance">0.0000</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-label">ENTROPY</div>
-                        <div class="metric-value" id="gcp2Entropy">0.0000</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-label">FREQUENCY</div>
-                        <div class="metric-value" id="gcp2Freq">0 Hz</div>
-                    </div>
-                    <div class="metric">
-                        <div class="metric-label">Z-SCORE</div>
-                        <div class="metric-value" id="gcp2ZScore">0.00</div>
-                    </div>
-                </div>
+                <h2>⬢ GCP2 COLOR READING ⬢</h2>
+                <div id="gcp2ColorDisplay" class="color-reading-panel"></div>
+                <div id="gcp2ColorValue" class="color-value-text">INITIALIZING...</div>
             </div>
 
             <div class="device-panel">
@@ -543,9 +538,7 @@
 
     <script>
         // Initialize canvases
-        const gcp2Canvas = document.getElementById('gcp2Canvas');
         const sculptureCanvas = document.getElementById('sculptureCanvas');
-        const gcp2Ctx = gcp2Canvas.getContext('2d');
         const sculptureCtx = sculptureCanvas.getContext('2d');
 
         function setupCanvas(canvas) {
@@ -557,11 +550,9 @@
             return ctx;
         }
 
-        setupCanvas(gcp2Canvas);
         setupCanvas(sculptureCanvas);
 
         // Waveform data
-        let gcp2Data = [];
         let sculptureData = [];
         const maxDataPoints = 100;
 
@@ -605,13 +596,6 @@
         }
 
         // Generate simulated data
-        function generateGCP2Data() {
-            // Simulated quantum random data with varying coherence
-            const baseNoise = (Math.random() - 0.5) * 0.8;
-            const coherenceInfluence = Math.sin(time * 0.1) * correlation * 0.3;
-            return baseNoise + coherenceInfluence;
-        }
-
         function generateSculptureData() {
             // Simulated sensor data that correlates with GCP2
             const baseSignal = Math.sin(time * 0.15) * 0.6;
@@ -622,17 +606,6 @@
 
         // Update metrics
         function updateMetrics() {
-            // GCP2 metrics
-            const gcp2Var = (Math.random() * 0.1).toFixed(4);
-            const gcp2Ent = (0.9 + Math.random() * 0.1).toFixed(4);
-            const gcp2Freq = Math.floor(50 + Math.random() * 150);
-            const gcp2Z = (Math.random() * 3 - 1.5).toFixed(2);
-            
-            document.getElementById('gcp2Variance').textContent = gcp2Var;
-            document.getElementById('gcp2Entropy').textContent = gcp2Ent;
-            document.getElementById('gcp2Freq').textContent = gcp2Freq + ' Hz';
-            document.getElementById('gcp2ZScore').textContent = gcp2Z;
-
             // Sculpture metrics
             const sculpAmp = (0.5 + Math.random() * 0.5).toFixed(4);
             const sculpPhase = Math.floor(Math.random() * 360);
@@ -678,6 +651,17 @@
                 heart.style.fill = color;
                 heart.style.filter = `drop-shadow(0 0 ${5 + correlation * 20}px ${color})`;
             }
+
+            // Update GCP2 Color Display
+            const gcp2Display = document.getElementById('gcp2ColorDisplay');
+            const gcp2Text = document.getElementById('gcp2ColorValue');
+            if (gcp2Display && gcp2Text) {
+                gcp2Display.style.backgroundColor = color;
+                gcp2Display.style.boxShadow = `0 0 20px ${color}`;
+                gcp2Text.style.color = color;
+                gcp2Text.style.textShadow = `0 0 10px ${color}`;
+                gcp2Text.textContent = `HSL(${hue}, 100%, 50%)`;
+            }
         }
 
         // Add log entry
@@ -716,19 +700,15 @@
             time += 0.1;
             
             // Generate new data points
-            const gcp2Point = generateGCP2Data();
             const sculpturePoint = generateSculptureData();
             
-            gcp2Data.push(gcp2Point);
             sculptureData.push(sculpturePoint);
             
-            if (gcp2Data.length > maxDataPoints) {
-                gcp2Data.shift();
+            if (sculptureData.length > maxDataPoints) {
                 sculptureData.shift();
             }
             
             // Draw waveforms
-            drawWaveform(gcp2Ctx, gcp2Canvas, gcp2Data, '#00ff41');
             drawWaveform(sculptureCtx, sculptureCanvas, sculptureData, '#ff6b1a');
             
             // Update metrics every 30 frames
