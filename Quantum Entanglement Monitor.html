@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Entanglement Monitor - GCP2 & Sculpture</title>
+    <style>
+        :root {
+            --phosphor-green: #00ff41;
+            --phosphor-dim: #00aa2a;
+            --crt-orange: #ff6b1a;
+            --background: #0a0e1a;
+            --panel-bg: #1a1f2e;
+            --text-glow: 0 0 8px var(--phosphor-green);
+            --panel-glow: 0 0 20px rgba(0, 255, 65, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--background);
+            color: var(--phosphor-green);
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        .terminal-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: var(--panel-bg);
+            border: 3px solid var(--phosphor-dim);
+            border-radius: 8px;
+            box-shadow: var(--panel-glow), inset 0 0 40px rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            position: relative;
+        }
+
+        .scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                transparent 50%,
+                rgba(0, 255, 65, 0.03) 50%
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+            animation: scanline 8s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(4px); }
+        }
+
+        .crt-flicker {
+            animation: flicker 0.15s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.98; }
+            100% { opacity: 1; }
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 2px solid var(--phosphor-dim);
+            margin-bottom: 30px;
+            text-shadow: var(--text-glow);
+        }
+
+        h1 {
+            font-size: 2rem;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { text-shadow: 0 0 8px var(--phosphor-green); }
+            50% { text-shadow: 0 0 20px var(--phosphor-green), 0 0 30px var(--phosphor-green); }
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: var(--phosphor-dim);
+            letter-spacing: 2px;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--phosphor-dim);
+            border-radius: 4px;
+        }
+
+        .status-item {
+            text-align: center;
+        }
+
+        .status-label {
+            font-size: 0.7rem;
+            color: var(--phosphor-dim);
+            margin-bottom: 5px;
+        }
+
+        .status-value {
+            font-size: 1.2rem;
+            text-shadow: var(--text-glow);
+        }
+
+        .main-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .device-panel {
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid var(--phosphor-dim);
+            border-radius: 6px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .device-panel h2 {
+            font-size: 1rem;
+            margin-bottom: 15px;
+            text-align: center;
+            color: var(--crt-orange);
+            text-shadow: 0 0 8px var(--crt-orange);
+            letter-spacing: 3px;
+        }
+
+        .waveform-container {
+            width: 100%;
+            height: 180px;
+            background: rgba(0, 20, 10, 0.8);
+            border: 1px solid var(--phosphor-dim);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(0, 255, 65, 0.1) 19px, rgba(0, 255, 65, 0.1) 20px),
+                repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(0, 255, 65, 0.1) 19px, rgba(0, 255, 65, 0.1) 20px);
+            pointer-events: none;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .metric {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+
+        .metric-label {
+            color: var(--phosphor-dim);
+            font-size: 0.7rem;
+        }
+
+        .metric-value {
+            font-size: 1rem;
+            margin-top: 3px;
+        }
+
+        .entanglement-display {
+            grid-column: 1 / -1;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid var(--crt-orange);
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .entanglement-display h2 {
+            text-align: center;
+            color: var(--crt-orange);
+            text-shadow: 0 0 12px var(--crt-orange);
+            margin-bottom: 20px;
+            letter-spacing: 4px;
+        }
+
+        .correlation-meter {
+            position: relative;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--phosphor-dim);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .correlation-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--phosphor-green), var(--crt-orange));
+            transition: width 0.5s ease;
+            box-shadow: 0 0 20px var(--phosphor-green);
+        }
+
+        .correlation-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            text-shadow: 0 0 4px #000, 0 0 8px var(--phosphor-green);
+            z-index: 1;
+        }
+
+        .quantum-state {
+            text-align: center;
+            font-size: 1.2rem;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 4px;
+            animation: state-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes state-pulse {
+            0%, 100% { 
+                box-shadow: inset 0 0 20px rgba(0, 255, 65, 0.2);
+            }
+            50% { 
+                box-shadow: inset 0 0 40px rgba(255, 107, 26, 0.4);
+            }
+        }
+
+        .data-stream {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--phosphor-dim);
+            border-radius: 6px;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            font-size: 0.75rem;
+            line-height: 1.6;
+        }
+
+        .data-stream::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .data-stream::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .data-stream::-webkit-scrollbar-thumb {
+            background: var(--phosphor-dim);
+            border-radius: 4px;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            opacity: 0;
+            animation: fade-in 0.5s forwards;
+        }
+
+        @keyframes fade-in {
+            to { opacity: 1; }
+        }
+
+        .timestamp {
+            color: var(--crt-orange);
+        }
+
+        .connection-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+            animation: blink 2s ease-in-out infinite;
+        }
+
+        .connected {
+            background: var(--phosphor-green);
+            box-shadow: 0 0 10px var(--phosphor-green);
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px 0;
+            border-top: 2px solid var(--phosphor-dim);
+            margin-top: 30px;
+            font-size: 0.8rem;
+            color: var(--phosphor-dim);
+        }
+
+        @media (max-width: 768px) {
+            .main-display {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="crt-flicker">
+    <div class="terminal-container">
+        <div class="scanline"></div>
+        
+        <header>
+            <h1>◈ QUANTUM ENTANGLEMENT MONITOR ◈</h1>
+            <div class="subtitle">GCP2 ⟷ SCULPTURE COHERENCE INTERFACE v2.0</div>
+        </header>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-label">GCP2 NODE</div>
+                <div class="status-value">ACTIVE<span class="connection-indicator connected"></span></div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">SCULPTURE</div>
+                <div class="status-value">ONLINE<span class="connection-indicator connected"></span></div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">UPTIME</div>
+                <div class="status-value" id="uptime">00:00:00</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">PACKETS</div>
+                <div class="status-value" id="packets">0</div>
+            </div>
+        </div>
+
+        <div class="entanglement-display">
+            <h2>⟡ QUANTUM CORRELATION INDEX ⟡</h2>
+            <div class="correlation-meter">
+                <div class="correlation-fill" id="correlationFill"></div>
+                <div class="correlation-label" id="correlationLabel">0%</div>
+            </div>
+            <div class="quantum-state" id="quantumState">
+                ENTANGLED STATE: ESTABLISHING COHERENCE...
+            </div>
+        </div>
+
+        <div class="main-display">
+            <div class="device-panel">
+                <h2>⬢ GCP2 RANDOM STREAM ⬢</h2>
+                <div class="waveform-container">
+                    <canvas id="gcp2Canvas"></canvas>
+                    <div class="grid-overlay"></div>
+                </div>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-label">VARIANCE</div>
+                        <div class="metric-value" id="gcp2Variance">0.0000</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">ENTROPY</div>
+                        <div class="metric-value" id="gcp2Entropy">0.0000</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">FREQUENCY</div>
+                        <div class="metric-value" id="gcp2Freq">0 Hz</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Z-SCORE</div>
+                        <div class="metric-value" id="gcp2ZScore">0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="device-panel">
+                <h2>⬡ SCULPTURE SENSOR ARRAY ⬡</h2>
+                <div class="waveform-container">
+                    <canvas id="sculptureCanvas"></canvas>
+                    <div class="grid-overlay"></div>
+                </div>
+                <div class="metrics">
+                    <div class="metric">
+                        <div class="metric-label">AMPLITUDE</div>
+                        <div class="metric-value" id="sculpAmplitude">0.0000</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">PHASE</div>
+                        <div class="metric-value" id="sculpPhase">0°</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">RESONANCE</div>
+                        <div class="metric-value" id="sculpResonance">0 Hz</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">COHERENCE</div>
+                        <div class="metric-value" id="sculpCoherence">0.00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-stream" id="dataStream">
+            <div class="log-entry"><span class="timestamp">[00:00:00]</span> System initialization complete...</div>
+            <div class="log-entry"><span class="timestamp">[00:00:01]</span> Establishing quantum channel...</div>
+            <div class="log-entry"><span class="timestamp">[00:00:02]</span> GCP2 node connected at 127.0.0.1</div>
+            <div class="log-entry"><span class="timestamp">[00:00:03]</span> Sculpture sensor array online</div>
+        </div>
+
+        <footer>
+            ◈ ELIXART QUANTUM RESEARCH DIVISION ◈ PENN VALLEY, CA ◈ 2026 ◈
+        </footer>
+    </div>
+
+    <script>
+        // Initialize canvases
+        const gcp2Canvas = document.getElementById('gcp2Canvas');
+        const sculptureCanvas = document.getElementById('sculptureCanvas');
+        const gcp2Ctx = gcp2Canvas.getContext('2d');
+        const sculptureCtx = sculptureCanvas.getContext('2d');
+
+        function setupCanvas(canvas) {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * 2;
+            canvas.height = rect.height * 2;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(2, 2);
+            return ctx;
+        }
+
+        setupCanvas(gcp2Canvas);
+        setupCanvas(sculptureCanvas);
+
+        // Waveform data
+        let gcp2Data = [];
+        let sculptureData = [];
+        const maxDataPoints = 100;
+
+        // Simulation parameters
+        let time = 0;
+        let correlation = 0;
+        let packets = 0;
+        let startTime = Date.now();
+
+        // Draw waveform
+        function drawWaveform(ctx, canvas, data, color) {
+            const rect = canvas.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            if (data.length < 2) return;
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = color;
+            
+            ctx.beginPath();
+            const step = width / (maxDataPoints - 1);
+            
+            for (let i = 0; i < data.length; i++) {
+                const x = i * step;
+                const y = height / 2 + data[i] * height / 2;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        // Generate simulated data
+        function generateGCP2Data() {
+            // Simulated quantum random data with varying coherence
+            const baseNoise = (Math.random() - 0.5) * 0.8;
+            const coherenceInfluence = Math.sin(time * 0.1) * correlation * 0.3;
+            return baseNoise + coherenceInfluence;
+        }
+
+        function generateSculptureData() {
+            // Simulated sensor data that correlates with GCP2
+            const baseSignal = Math.sin(time * 0.15) * 0.6;
+            const coherenceInfluence = Math.sin(time * 0.1) * correlation * 0.4;
+            const noise = (Math.random() - 0.5) * 0.2;
+            return baseSignal + coherenceInfluence + noise;
+        }
+
+        // Update metrics
+        function updateMetrics() {
+            // GCP2 metrics
+            const gcp2Var = (Math.random() * 0.1).toFixed(4);
+            const gcp2Ent = (0.9 + Math.random() * 0.1).toFixed(4);
+            const gcp2Freq = Math.floor(50 + Math.random() * 150);
+            const gcp2Z = (Math.random() * 3 - 1.5).toFixed(2);
+            
+            document.getElementById('gcp2Variance').textContent = gcp2Var;
+            document.getElementById('gcp2Entropy').textContent = gcp2Ent;
+            document.getElementById('gcp2Freq').textContent = gcp2Freq + ' Hz';
+            document.getElementById('gcp2ZScore').textContent = gcp2Z;
+
+            // Sculpture metrics
+            const sculpAmp = (0.5 + Math.random() * 0.5).toFixed(4);
+            const sculpPhase = Math.floor(Math.random() * 360);
+            const sculpRes = Math.floor(30 + Math.random() * 70);
+            const sculpCoh = correlation.toFixed(2);
+            
+            document.getElementById('sculpAmplitude').textContent = sculpAmp;
+            document.getElementById('sculpPhase').textContent = sculpPhase + '°';
+            document.getElementById('sculpResonance').textContent = sculpRes + ' Hz';
+            document.getElementById('sculpCoherence').textContent = sculpCoh;
+        }
+
+        // Update correlation
+        function updateCorrelation() {
+            // Simulate varying correlation levels
+            correlation = 0.3 + Math.sin(time * 0.02) * 0.3 + Math.random() * 0.2;
+            correlation = Math.max(0, Math.min(1, correlation));
+            
+            const percentage = Math.floor(correlation * 100);
+            document.getElementById('correlationFill').style.width = percentage + '%';
+            document.getElementById('correlationLabel').textContent = percentage + '%';
+            
+            // Update quantum state
+            let state = 'ESTABLISHING COHERENCE...';
+            if (correlation > 0.8) {
+                state = '✧ STRONG ENTANGLEMENT DETECTED ✧';
+            } else if (correlation > 0.6) {
+                state = '⟡ MODERATE CORRELATION ACTIVE ⟡';
+            } else if (correlation > 0.4) {
+                state = '◈ WEAK COUPLING OBSERVED ◈';
+            } else {
+                state = '⬡ BASELINE NOISE FLOOR ⬡';
+            }
+            document.getElementById('quantumState').textContent = state;
+        }
+
+        // Add log entry
+        function addLogEntry(message) {
+            const stream = document.getElementById('dataStream');
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const hours = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+            const seconds = String(elapsed % 60).padStart(2, '0');
+            const timestamp = `${hours}:${minutes}:${seconds}`;
+            
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="timestamp">[${timestamp}]</span> ${message}`;
+            
+            stream.appendChild(entry);
+            stream.scrollTop = stream.scrollHeight;
+            
+            // Keep only last 50 entries
+            if (stream.children.length > 50) {
+                stream.removeChild(stream.firstChild);
+            }
+        }
+
+        // Update uptime
+        function updateUptime() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const hours = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+            const seconds = String(elapsed % 60).padStart(2, '0');
+            document.getElementById('uptime').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        // Animation loop
+        function animate() {
+            time += 0.1;
+            
+            // Generate new data points
+            const gcp2Point = generateGCP2Data();
+            const sculpturePoint = generateSculptureData();
+            
+            gcp2Data.push(gcp2Point);
+            sculptureData.push(sculpturePoint);
+            
+            if (gcp2Data.length > maxDataPoints) {
+                gcp2Data.shift();
+                sculptureData.shift();
+            }
+            
+            // Draw waveforms
+            drawWaveform(gcp2Ctx, gcp2Canvas, gcp2Data, '#00ff41');
+            drawWaveform(sculptureCtx, sculptureCanvas, sculptureData, '#ff6b1a');
+            
+            // Update metrics every 30 frames
+            if (Math.floor(time) % 3 === 0) {
+                updateMetrics();
+            }
+            
+            // Update correlation every frame
+            updateCorrelation();
+            
+            // Update packet counter
+            packets++;
+            document.getElementById('packets').textContent = packets;
+            
+            // Add log entries occasionally
+            if (Math.random() < 0.02) {
+                const events = [
+                    'Quantum fluctuation detected',
+                    'Correlation spike measured',
+                    'Phase alignment observed',
+                    'Coherence pattern stabilizing',
+                    'Non-local correlation confirmed',
+                    'Entanglement signature verified',
+                    'Sensor array synchronization complete'
+                ];
+                addLogEntry(events[Math.floor(Math.random() * events.length)]);
+            }
+            
+            requestAnimationFrame(animate);
+        }
+
+        // Update uptime every second
+        setInterval(updateUptime, 1000);
+
+        // Start animation
+        animate();
+
+        // Log initial events
+        setTimeout(() => addLogEntry('Quantum coherence baseline established'), 2000);
+        setTimeout(() => addLogEntry('Beginning correlation analysis...'), 4000);
+    </script>
+</body>
+</html>
+
