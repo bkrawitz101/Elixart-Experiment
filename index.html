@@ -317,6 +317,24 @@
         }
 
         .node-info-title { color: var(--secondary); font-size: 14px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase;}
+
+        @media (max-width: 768px) {
+            .ui-layer {
+                flex-direction: column;
+                bottom: 10px;
+                gap: 10px;
+            }
+            .panel {
+                width: 100%;
+                max-width: 100%;
+                padding: 10px;
+            }
+            .data-stream {
+                height: 60px;
+            }
+            h1 { font-size: 18px; }
+            .network-status { font-size: 10px; }
+        }
     </style>
 </head>
 <body>
@@ -450,6 +468,17 @@
                     nodeInfo.style.opacity = 0;
                 });
 
+                // Add click event for mobile interaction
+                nodeEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const rect = nodeEl.getBoundingClientRect();
+                    nodeInfo.style.opacity = 1;
+                    nodeInfo.style.left = (rect.left + rect.width/2) + 'px';
+                    nodeInfo.style.top = (rect.top - 10) + 'px';
+                    document.getElementById('ni-title').innerText = node.name + ' (' + node.city + ')';
+                    document.getElementById('ni-zscore').innerText = (1.0 + Math.random() * 1.5).toFixed(2);
+                });
+
                 htmlNodesContainer.appendChild(nodeEl);
             });
         }
@@ -459,15 +488,22 @@
             height = window.innerHeight;
             canvas.width = width;
             canvas.height = height;
+            
+            const isMobile = width < 768;
 
             nodes.forEach((node, index) => {
                 const el = document.getElementById('node-' + index);
                 if(el) {
+                    // Adjust Y on mobile to prevent overlap with bottom UI
+                    const yMult = isMobile ? 0.75 : 1.0;
                     el.style.left = (node.x * width) + 'px';
-                    el.style.top = (node.y * height) + 'px';
+                    el.style.top = (node.y * height * yMult) + 'px';
                 }
             });
         }
+        
+        // Hide info when clicking background
+        document.body.addEventListener('click', () => { nodeInfo.style.opacity = 0; });
 
         createNodes();
         window.addEventListener('resize', resize);
@@ -482,11 +518,14 @@
             frame++;
             ctx.clearRect(0, 0, width, height);
 
+            const isMobile = width < 768;
+            const yMult = isMobile ? 0.75 : 1.0;
+
             connections.forEach(conn => {
                 const x1 = conn.from.x * width;
-                const y1 = conn.from.y * height;
+                const y1 = conn.from.y * height * yMult;
                 const x2 = conn.to.x * width;
-                const y2 = conn.to.y * height;
+                const y2 = conn.to.y * height * yMult;
 
                 const currentStrength = conn.strength + Math.sin(frame * 0.05 + conn.from.x * 10) * 0.2;
                 const alpha = Math.max(0.1, Math.min(0.8, currentStrength));
@@ -596,7 +635,8 @@
 
         document.getElementById('pulseBtn').addEventListener('click', () => {
             const nvNode = nodes[1];
-            pulseOrigin = { x: nvNode.x * width, y: nvNode.y * height };
+            const yMult = width < 768 ? 0.75 : 1.0;
+            pulseOrigin = { x: nvNode.x * width, y: nvNode.y * height * yMult };
             pulseRadius = 0;
             globalPulseActive = true;
 
